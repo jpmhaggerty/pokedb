@@ -5,12 +5,11 @@ const port = 3000
 const url = 'https://pokeapi.co/api/v2/'
 const knex = require('knex')(require('./knexfile.js')[process.env.NODE_ENV||'development']);
 
-
 app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`))
 
 async function fetchPokemonDetails(id) {
   // Check our local db for details
-  return knex
+  return new Promise(knex
   .select('*')
   .from('pokemon')
   .where({id})
@@ -23,12 +22,14 @@ async function fetchPokemonDetails(id) {
       console.log("Returning data", json)
       return Promise.resolve(json)
     })
-  })
+  }))
 
 }
 
 app.get('/api/:pokemon/', (req, res) => {
-    fetchPokemonDetails(req.params.pokemon).then((json) => res.json(json))
+  fetchPokemonDetails(req.params.pokemon).then(json => {
+  console.log("Returned json:", json)
+  res.json(json)})
 });
 
 app.get('/api/:pokemon/img', (req, res) => {
@@ -40,3 +41,4 @@ app.get('/api/:pokemon/img', (req, res) => {
 
 // knex('pokemon')
 //   .insert({/* data to insert */})
+
