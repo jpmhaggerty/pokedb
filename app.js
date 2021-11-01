@@ -18,7 +18,7 @@ async function getFromInternalDatabase(id) {
       .from("pokemon")
       .where("pokemon_id", id)
       .then((data) => {
-        return resolve(data);
+        return resolve(data[0]);
       });
   });
 }
@@ -30,7 +30,7 @@ async function getFromExternalDatabase(id) {
       .then((json) => {
         let { name, weight, height } = json;
         let pokemon_id = json.id;
-        let image = json.sprites.front_default;
+        let image = json.sprites.other['official-artwork'].front_default;
 
         let newPokemon = { pokemon_id, name, weight, height, image };
         //console.log("Returning from catch statement", json);
@@ -38,7 +38,7 @@ async function getFromExternalDatabase(id) {
         knex("pokemon")
           .insert(newPokemon)
           .then((json) => {
-            return resolve([newPokemon]);
+            return resolve(newPokemon);
           });
       });
   });
@@ -49,7 +49,7 @@ async function fetchPokemonDetails(id) {
     knex
       .select("*")
       .from("pokemon")
-      .where("pokemon_id", id)
+      .where({pokemon_id: id})
       .then((data) => {
         if (data.length > 0) {
           return resolve(getFromInternalDatabase(id));
@@ -78,3 +78,11 @@ app.get("/api/:pokemon/img", (req, res) => {
     res.send(json.image);
   });
 });
+
+
+// app.get("/api/:attribute", (req, res) => {
+//   fetchPokemonDetails(req.params.pokemon).then((json) => {
+//     res.send(json.image);
+//   });
+// });
+
