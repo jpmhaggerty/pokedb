@@ -10,7 +10,7 @@ app.listen(port, () => console.log(`Example app listening at http://localhost:${
 
 async function fetchPokemonDetails(id) {
   // Check our local db for details
-  knex
+  return knex
   .select('*')
   .from('pokemon')
   .where({id})
