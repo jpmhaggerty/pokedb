@@ -11,45 +11,70 @@ app.listen(port, () =>
   console.log(`Example app listening at http://localhost:${port}`)
 );
 
+async function getFromInternalDatabase(id) {
+  return new Promise((resolve, reject) => {
+    knex
+      .select("pokemon_id", "name", "weight", "height", "image")
+      .from("pokemon")
+      .where("pokemon_id", id)
+      .then((data) => {
+        return resolve(data);
+      });
+  });
+}
+
+async function getFromExternalDatabase(id) {
+  return new Promise((resolve, reject) => {
+    fetch(`${url}pokemon/${id}`)
+      .then((data) => data.json())
+      .then((json) => {
+        let { name, weight, height } = json;
+        let pokemon_id = json.id;
+        let image = json.sprites.front_default;
+
+        let newPokemon = { pokemon_id, name, weight, height, image };
+        //console.log("Returning from catch statement", json);
+        // Put details into database
+        knex("pokemon")
+          .insert(newPokemon)
+          .then((json) => {
+            return resolve([newPokemon]);
+          });
+      });
+  });
+}
+
 async function fetchPokemonDetails(id) {
-  // Check our local db for details
   return new Promise((resolve, reject) => {
     knex
       .select("*")
       .from("pokemon")
-      .where({ id })
+      .where("pokemon_id", id)
       .then((data) => {
         if (data.length > 0) {
-          return resolve(data);
+          return resolve(getFromInternalDatabase(id));
         } else {
-          fetch(`${url}pokemon/${id}`).then((data) => {
-            let json = data.json();
-            //console.log("Returning from catch statement", json);
-            // Put details into database
-
-            return resolve(json);
-          });
+          return resolve(getFromExternalDatabase(id));
         }
       });
   });
 }
 
+app.get("/api", (req, res) => {
+  knex
+    .select("*")
+    .from("pokemon")
+    .then((data) => res.json(data));
+});
+
 app.get("/api/:pokemon/", (req, res) => {
   fetchPokemonDetails(req.params.pokemon).then((json) => {
-    //console.log("Returned json:", json);
     res.json(json);
   });
 });
 
 app.get("/api/:pokemon/img", (req, res) => {
-  // do something with image
-
-  knex("pokemon")
-  .insert([{name: "name"},
-    {height: 10},
-    {weight: 15},
-    {image: "some URI"},
-]);
-
-  res.send("Image " + req.params.pokemon);
+  fetchPokemonDetails(req.params.pokemon).then((json) => {
+    res.send(json.image);
+  });
 });
